@@ -1,0 +1,100 @@
+
+name: Green & Tasty - AQA Tests
+
+on:
+  push:
+    branches:
+      - main
+      - master
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  e2e-tests:
+    name: NUnit + Playwright E2E
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+
+    env:
+      AQA_FRONTEND_URL: http://localhost:4200
+      AQA_API_URL: https://ob2ahveso3.execute-api.eu-north-1.amazonaws.com/develop
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup .NET 10
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22.22.3'
+          cache: npm
+          cache-dependency-path: frontend/restaurant-frontend-app/package-lock.json
+
+      - name: Install Angular dependencies
+        working-directory: frontend/restaurant-frontend-app
+        run: npm ci
+
+      - name: Build AQA project
+        run: dotnet build aqa/GreenTasty.Aqa/GreenTasty.Aqa.csproj --configuration Release
+
+      - name: Install Playwright Chromium
+        run: |
+          pwsh aqa/GreenTasty.Aqa/bin/Release/net10.0/playwright.ps1 install --with-deps chromium
+
+      - name: Start Angular application
+        working-directory: frontend/restaurant-frontend-app
+        run: |
+          nohup npm start -- --host 0.0.0.0 --port 4200 > "$RUNNER_TEMP/angular.log" 2>&1 &
+
+          if ! timeout 180 bash -c \
+            'until curl -fsS http://localhost:4200/ > /dev/null; do sleep 3; done'; then
+            cat "$RUNNER_TEMP/angular.log"
+            exit 1
+          fi
+
+          echo "Angular is ready"
+
+      - name: Run API and E2E tests
+        env:
+          AQA_OWNER_EMAIL: ${{ secrets.AQA_OWNER_EMAIL }}
+          AQA_OWNER_PASSWORD: ${{ secrets.AQA_OWNER_PASSWORD }}
+        run: |
+          if [ -z "$AQA_OWNER_EMAIL" ] || [ -z "$AQA_OWNER_PASSWORD" ]; then
+            echo "Missing required GitHub Actions secrets."
+            exit 1
+          fi
+
+          dotnet test aqa/GreenTasty.Aqa/GreenTasty.Aqa.csproj \
+            --configuration Release \
+            --no-build \
+            --filter "TestCategory!=PostDeploy" \
+            --logger "console;verbosity=normal" \
+            --logger "trx;LogFileName=aqa-results.trx" \
+            --results-directory aqa/GreenTasty.Aqa/TestResults
+
+      - name: Upload test reports and screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: green-tasty-aqa-results
+          path: |
+            aqa/GreenTasty.Aqa/TestResults/
+            aqa/GreenTasty.Aqa/bin/Release/net10.0/artifacts/
+          if-no-files-found: warn
+          retention-days: 14
+
+      - name: Upload Angular log on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: angular-server-log
+          path: ${{ runner.temp }}/angular.log
+          if-no-files-found: ignore
+          retention-days: 7

@@ -1,0 +1,72 @@
+
+# Node.js / Angular
+node_modules/
+dist/
+.angular/
+coverage/
+.cache/
+
+# .NET
+**/bin/
+**/obj/
+**/TestResults/
+**/artifacts/
+
+# IDE
+.vs/
+.vscode/
+.idea/
+*.user
+*.suo
+
+# Test reports
+*.trx
+playwright-report/
+test-results/
+*.log
+
+# AWS / Terraform
+.aws/
+.aws-sam/
+.serverless/
+.terraform/
+**/.terraform/
+lambda-package/
+deployment_resources/
+**/deployment_resources/
+**/deployment_resources.json
+**/lambda_config.json
+**/.syndicate-config-*/
+*.tfstate
+*.tfstate.*
+*.tfvars
+*.tfvars.json
+
+# Secrets / credentials
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.pfx
+*.p12
+*.lic
+secrets.json
+credentials.json
+
+# Generated environment configuration
+**/src/environments/environment.production.ts
+
+# Archives
+*.zip
+
+# Temporary files
+*.bak
+*.tmp
+*.backup
+
+# AI assistant instructions
+**/CLAUDE.md
+
+# AI assistant instructions
+**/CLAUDE.md

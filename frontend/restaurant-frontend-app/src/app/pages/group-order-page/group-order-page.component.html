@@ -1,0 +1,151 @@
+
+<main class="page">
+  <h1>Group Pre-Order</h1>
+
+  @if (loading()) {
+    <p>Loading group pre-order...</p>
+  } @else if (error()) {
+    <section class="error-state">
+      <p>{{ error() }}</p>
+      <button type="button" (click)="load()">Try again</button>
+    </section>
+  } @else if (invite(); as booking) {
+
+    <header class="page-header">
+<p class="restaurant-info">
+  <strong>{{ booking.RestaurantName }}</strong>
+  <span>Location: {{ booking.LocationAddress }}</span>
+</p>
+
+      <p>{{ booking.StartTime | date:'MMM d, y' }}</p>
+
+      <p>
+        {{ booking.StartTime | date:'shortTime' }} -
+        {{ booking.EndTime | date:'shortTime' }}
+      </p>
+
+      <p>
+        {{ participants().length }} of
+        {{ booking.MaxGuestCount }} participants
+      </p>
+
+      <span class="status-badge">
+        {{ isSubmitted() ? 'Sent to Restaurant' : 'Collecting pre-orders' }}
+      </span>
+
+<div class="sync-info">
+  @if (lastUpdated(); as updated) {
+    <span>Updated at {{ updated | date:'mediumTime' }}</span>
+  }
+
+  @if (!isSubmitted()) {
+    <button
+      type="button"
+      [disabled]="refreshing()"
+      (click)="refresh()"
+    >
+      Refresh
+    </button>
+  }
+</div>
+
+@if (refreshError()) {
+  <p class="refresh-error">
+    Couldn't refresh. Showing data from
+    {{ lastUpdated() | date:'mediumTime' }}.
+  </p>
+}
+
+    </header>
+
+    <ul class="participants">
+      @for (person of displayParticipants(); track person.id) {
+        <li>
+          <app-participant-card
+            [participant]="person"
+            [isMe]="person.id === ownerSessionId()"
+          />
+        </li>
+      }
+    </ul>
+
+    @if (isEmpty()) {
+      <p>Participants haven't added any dishes yet</p>
+    }
+
+    <section class="consolidated">
+      <h2>Consolidated pre-order</h2>
+
+      <ul>
+        @for (item of consolidated().items; track item.dish.id) {
+          <li>
+            {{ item.dish.name }} × {{ item.quantity }}
+            – {{ item.dish.price * item.quantity | currency }}
+          </li>
+        }
+      </ul>
+    </section>
+
+    @if (pendingCount() > 0) {
+      <p class="pending-warning">
+        {{ pendingCount() }}
+        {{ pendingCount() === 1 ? 'participant' : 'participants' }}
+        {{ pendingCount() === 1 ? "hasn't" : "haven't" }} submitted their cart yet – their dishes won't
+        be included in the order.
+      </p>
+    }
+
+    <section class="summary">
+      <h2>Grand Total</h2>
+      <p>{{ consolidated().total | currency }}</p>
+    </section>
+
+    @if (!isSubmitted()) {
+      <button
+        type="button"
+        class="submit-button"
+        [disabled]="!canSubmit()"
+        (click)="openSubmitDialog()"
+      >
+        Submit Pre-Order
+      </button>
+    }
+  }
+
+  @if (confirmOpen()) {
+    <app-modal
+      title="Confirm Pre-Order"
+      (closed)="closeSubmitDialog()"
+    >
+      <p>Send the consolidated pre-order to the restaurant?</p>
+
+<p class="confirmation-total">
+  Total to send:
+  <strong>{{ confirmationTotal() | currency:'USD' }}</strong>
+</p>
+
+<p class="confirmation-note">
+  Only submitted pre-orders will be included.
+  Unsubmitted selections will be excluded.
+</p>
+
+      <div modal-actions class="modal-buttons">
+        <button
+          type="button"
+          [disabled]="submitting()"
+          (click)="closeSubmitDialog()"
+        >
+          Cancel
+        </button>
+
+        <button
+          type="button"
+          [disabled]="submitting()"
+          (click)="submit()"
+        >
+          {{ submitting() ? 'Submitting…' : 'Submit' }}
+        </button>
+      </div>
+    </app-modal>
+  }
+</main>
