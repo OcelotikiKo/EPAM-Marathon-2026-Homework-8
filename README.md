@@ -4,6 +4,10 @@
 
 **Author:** Yan Kolesnykov
 
+## Live Demo
+
+**[Green Tasty Restaurant“ Open Website](https://dl8v07zbkza4a.cloudfront.net/main)**
+
 **Direction:** 1 – Group Pre-Order
 
 **Testing approach:** Page Object Model (POM) with API-assisted E2E testing
