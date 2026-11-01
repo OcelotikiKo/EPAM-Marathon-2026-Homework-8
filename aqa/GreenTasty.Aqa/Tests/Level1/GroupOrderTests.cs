@@ -24,11 +24,38 @@ public class GroupOrderTests
             .EnumerateArray()
             .ToArray();
 
+
+
+
+Console.WriteLine(
+    $"Group participants count: {initialParticipants.Length}");
+
+foreach (var participant in initialParticipants)
+{
+    string id = participant.TryGetProperty("Id", out var idValue)
+        ? idValue.ToString()
+        : "<missing>";
+
+    string type = participant.TryGetProperty("Type", out var typeValue)
+        ? $"{typeValue} ({typeValue.ValueKind})"
+        : "<missing>";
+
+    Console.WriteLine($"Participant: Id={id}, Type={type}");
+}
+
+using var ownerInfo = await fixture.OwnerApi.GetOwnerSessionAsync(
+    fixture.ReservationId);
+
+Console.WriteLine(
+    "Expected Owner session ID: " +
+    ownerInfo.RootElement.GetProperty("guestSessionId").GetString());
+
         Assert.That(
             initialParticipants.Any(p =>
                 p.GetProperty("Type").GetString() == "Owner"),
             Is.True,
             "Owner must be present in the group.");
+
 
         string guestId = await fixture.AddGuestAsync();
 

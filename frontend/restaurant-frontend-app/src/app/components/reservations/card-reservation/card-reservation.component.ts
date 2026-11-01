@@ -91,6 +91,14 @@ export class CardReservationComponent {
     newStatus: ReservationStatusCustomer;
   }>();
 
+openGroupPreOrder(): void {
+  void this.router.navigate([
+    '/reservations',
+    this.r().id,
+    'group-order'
+  ]);
+}
+
   readonly preOrder = output<CreateOrderRequest>();
   readonly showWaiterOrderModal = signal(false);
 

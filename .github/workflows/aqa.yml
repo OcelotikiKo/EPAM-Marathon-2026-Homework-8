@@ -74,7 +74,6 @@ jobs:
           dotnet test aqa/GreenTasty.Aqa/GreenTasty.Aqa.csproj \
             --configuration Release \
             --no-build \
-            --filter "TestCategory!=PostDeploy" \
             --logger "console;verbosity=normal" \
             --logger "trx;LogFileName=aqa-results.trx" \
             --results-directory aqa/GreenTasty.Aqa/TestResults

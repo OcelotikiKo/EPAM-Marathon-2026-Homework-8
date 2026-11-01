@@ -48,12 +48,68 @@ reservationId = await CreateReservationWithRetriesAsync(
     publicApi, ownerApi);
 
 
-            using var ownerInfo =
-                await ownerApi.GetOwnerSessionAsync(
-                    reservationId);
+using var ownerInfo =
+    await ownerApi.GetOwnerSessionAsync(reservationId);
 
-            string groupId = RestaurantApiClient.ReadString(
-                ownerInfo.RootElement, "groupReservationId");
+Console.WriteLine(
+    "Owner session root type: " +
+    ownerInfo.RootElement.ValueKind);
+
+if (ownerInfo.RootElement.ValueKind == JsonValueKind.Object)
+{
+    Console.WriteLine(
+        "Owner session properties: " +
+        string.Join(", ",
+            ownerInfo.RootElement
+                .EnumerateObject()
+                .Select(p =>
+                    $"{p.Name} ({p.Value.ValueKind})")));
+}
+
+string groupId = RestaurantApiClient.ReadString(
+    ownerInfo.RootElement, "groupReservationId");
+
+
+string ownerSessionId = RestaurantApiClient.ReadString(
+    ownerInfo.RootElement, "guestSessionId");
+
+bool ownerVisible = false;
+
+for (int attempt = 1; attempt <= 15; attempt++)
+{
+    using var snapshot =
+        await ownerApi.GetGroupSessionsDocumentAsync(groupId);
+
+    var participants = snapshot.RootElement
+        .GetProperty("Participants")
+        .EnumerateArray()
+        .ToArray();
+
+    ownerVisible = participants.Any(p =>
+        p.GetProperty("Id").GetString() == ownerSessionId &&
+        p.GetProperty("Type").GetString() == "Owner");
+
+    if (ownerVisible)
+    {
+        Console.WriteLine(
+            $"Owner visible in group after {attempt} check(s).");
+        break;
+    }
+
+    Console.WriteLine(
+        $"Owner not visible yet. Attempt {attempt}/15.");
+
+    if (attempt < 15)
+        await Task.Delay(1000);
+}
+
+if (!ownerVisible)
+{
+    throw new InvalidOperationException(
+        "Owner session exists, but group sessions API " +
+        "does not return it after 15 checks.");
+}
+
 
             return new GroupOrderFixture(
                 publicApi,
